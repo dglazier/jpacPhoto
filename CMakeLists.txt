@@ -4,6 +4,9 @@ project (jpacPhoto)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
+set(CMAKE_CXX_FLAGS "-fPIC -O3") #dg
+set(BUILD_SHARED_LIBS ON) #dg
+set(BUILD_STATIC_LIBS OFF)#dg
 
 #Compare the new contents with the existing file, if it exists and is the
 # same we don't want to trigger a make by changing its timestamp.

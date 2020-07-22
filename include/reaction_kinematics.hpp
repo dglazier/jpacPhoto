@@ -88,11 +88,20 @@ namespace jpacPhoto
     {};
 
     const std::string vector_particle;
-    const double mVec, mVec2;
+    double mVec, mVec2; //dg
 
     // inital and final state kinematics
-    const double sth = (mVec + mPro) * (mVec + mPro);
-    const double Wth = (mVec + mPro);
+    double sth = (mVec + mPro) * (mVec + mPro);//dg
+    double Wth = (mVec + mPro);//dg
+
+    void setVectorMass(double m){//dg
+      mVec=m;
+      mVec2=m*m;
+      sth =  (mVec + mPro) * (mVec + mPro);
+      Wth = (mVec + mPro);
+      //should also change mass in final, eps_vec
+      final.setM1(m);
+    }//dg
     
     two_body_state initial, final;
     polarization_vector eps_vec, eps_gamma;

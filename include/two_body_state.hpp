@@ -31,7 +31,7 @@ namespace jpacPhoto
   class two_body_state
   {
   private:
-    const double m1, m2;
+    double m1, m2;//dg
     const std::string particle1, particle2;
 
   public:
@@ -52,6 +52,10 @@ namespace jpacPhoto
     std::complex<double> energy(std::string name, double s);
 
     std::complex<double> component(int i, std::string name, double s, double theta);
+
+    void setM1(double m){m1=m;} //dg
+    void setM2(double m){m2=m;} //dg
+    
   };
 };
 
