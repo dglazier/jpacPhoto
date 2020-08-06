@@ -1,8 +1,9 @@
 cmake_minimum_required (VERSION 2.9)
 
-set(CMAKE_CXX_FLAGS "-fPIC -O3") 
 
 project (jpacPhoto)
+
+set(CMAKE_CXX_FLAGS "-fPIC -O3") 
 
 #Compare the new contents with the existing file, if it exists and is the
 # same we don't want to trigger a make by changing its timestamp.
