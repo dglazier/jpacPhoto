@@ -42,17 +42,17 @@ namespace jpacPhoto
     TLorentzVector qRec;
 
     // Mandelstam Variables
-    double s_man()
+    inline double s_man()
     {
       return (pGam + pTarg).M2();
     }
 
-    double t_man()
+    inline double t_man()
     {
       return (pGam - qVec).M2();
     }
 
-    double u_man()
+    inline double u_man()
     {
       return (pGam - qRec).M2();
     }
@@ -79,7 +79,7 @@ namespace jpacPhoto
       target(initial, "target"), recoil(final, "recoil")
     {};
 
-  // Copy Constructor
+  // Copy Constructor 
     reaction_kinematics(const reaction_kinematics & old)
     : mVec(old.mVec), mVec2(old.mVec2), vector_particle(old.vector_particle),
       initial(old.initial), final(old.final),
@@ -88,12 +88,23 @@ namespace jpacPhoto
     {};
 
     const std::string vector_particle;
-    const double mVec, mVec2;
 
-    // inital and final state kinematics
-    const double sth = (mVec + mPro) * (mVec + mPro);
-    const double Wth = (mVec + mPro);
+    double mVec, mVec2; // mass and mass squared of the vector particle
+    double sth = (mVec + mPro) * (mVec + mPro); // final state threshold
+    double Wth = (mVec + mPro); // square root of the threshold
+
+    inline void set_vectormass(double m)
+    {
+      mVec  = m;
+      mVec2 = m*m;
+      sth   = (m + mPro) * (m + mPro);
+      Wth   = (m + mPro);
+
+      // also update the vector mass in two_body_state
+      final.set_m1(m);
+    };
     
+    // inital and final state kinematics (momenta)
     two_body_state initial, final;
     polarization_vector eps_vec, eps_gamma;
     dirac_spinor target, recoil;

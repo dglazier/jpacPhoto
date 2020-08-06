@@ -47,6 +47,8 @@ std::complex<double> jpacPhoto::polarization_vector::component(int i, int lambda
     std::cout << "polarization_vector: Invalid helicity! Quitting... \n";
     exit(0);
   }
+
+  return 0.;
 };
 
 std::complex<double> jpacPhoto::polarization_vector::conjugate_component(int i, int lambda, double s, double theta)

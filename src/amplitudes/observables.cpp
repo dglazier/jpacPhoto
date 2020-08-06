@@ -9,8 +9,8 @@
 #include "amplitudes/amplitude.hpp"
 
 // ---------------------------------------------------------------------------
-// square root of the square of the amplitude summed over all helicities
-double jpacPhoto::amplitude::probablity_distribution(double s, double t)
+// Square of the spin averaged amplitude squared
+double jpacPhoto::amplitude::probability_distribution(double s, double t)
 {
   double sum = 0.;
   for (int i = 0; i < 24; i++)
@@ -18,7 +18,9 @@ double jpacPhoto::amplitude::probablity_distribution(double s, double t)
     std::complex<double> amp_i = helicity_amplitude(kinematics->helicities[i], s, t);
     sum += std::real(amp_i * conj(amp_i));
   }
-  return sqrt(sum);
+
+  sum /= 4.; // Average over initial state helicites
+  return sum;
 };
 
 // ---------------------------------------------------------------------------
@@ -26,16 +28,12 @@ double jpacPhoto::amplitude::probablity_distribution(double s, double t)
 // in NANOBARN
 double jpacPhoto::amplitude::differential_xsection(double s, double t)
 {
-
-  double sum = probablity_distribution(s, t);
-  sum *= sum; // helicity summed squared amplitudes
+  double sum = probability_distribution(s, t);
 
   double norm = 1.;
   norm /= 64. * M_PI * s;
   norm /= real(pow(kinematics->initial.momentum("beam", s), 2.));
   norm /= (2.56819E-6); // Convert from GeV^-2 -> nb
-
-  norm /= 4.; // Average over final state helicites
 
   return norm * sum;
 };
@@ -140,7 +138,7 @@ std::complex<double> jpacPhoto::amplitude::SDME(int alpha, int lam, int lamp, do
   }
 
   // Normalization (sum over all amplitudes squared)
-  double norm = probablity_distribution(s, t);
+  double norm = probability_distribution(s, t);
   norm *= norm;
 
   // These are the indexes of the amplitudes in reaction_kinematics that have

@@ -9,64 +9,51 @@
 
 // ---------------------------------------------------------------------------
 // Assemble the helicity amplitude by contracting the lorentz indices
-std::complex<double> jpacPhoto::vector_exchange::helicity_amplitude(std::vector<int> helicities, double s, double t)
+std::complex<double> jpacPhoto::vector_exchange::helicity_amplitude(std::vector<int> helicities, double xs, double xt)
 {
   int lam_gam = helicities[0];
   int lam_targ = helicities[1];
   int lam_vec = helicities[2];
   int lam_rec = helicities[3];
 
-  double theta = kinematics->theta_s(s, t);
+  // Update the saved energies and angles
+  s = xs; t = xt;
+  theta = kinematics->theta_s(xs, xt);
+  zt = real(kinematics->z_t(s,t));
 
-  std::complex<double> result = 0.;
-  if (REGGE == false)
+  if (REGGE == false && FOUR_VEC == true)
   {
-    for (int mu = 0; mu < 4; mu++)
-    {
-      for(int nu = 0; nu < 4; nu++)
-      {
-        std::complex<double> temp;
-        temp  = top_vertex(mu, lam_gam, lam_vec, s, theta);
-        temp *= metric[mu];
-        temp *= vector_propagator(mu, nu, s, theta);
-        temp *= metric[nu];
-        temp *= bottom_vertex(nu, lam_targ, lam_rec, s, theta);
-
-        result += temp;
-      }
-    }
-  }
-  else
-  {
-    std::complex<double> zt = kinematics->z_t(s, t);
-
-    int lam  = lam_gam - lam_vec;
-    int lamp = (lam_targ - lam_rec) / 2.;
-    int M = std::max(std::abs(lam), std::abs(lamp));
-
-    // Product of residues
-    result  = top_residue(lam, t);
-    result *= bottom_residue(lamp, t);
-
-    // Angular momentum barrier factor
-    auto pq = [&](double t)
-    {
-      std::complex<double> q = (t - kinematics->mVec2) / sqrt(4. * t * xr);
-      std::complex<double> p = sqrt(xr * t - 4.*mPro2) / 2.;
-      return 2. * p * q;
-    };
-
-    // Theres only a nontrivial barrier factor in the lam = lamp = 0 case
-    if (M == 0)
-    {
-      result /= pq(t);
-    }
-
-    result *= half_angle_factor(lam, lamp, zt);
-    result *= regge_propagator(s, t);
-    result /= pow(s, double(M));
+    return covariant_amplitude(helicities);
   }
 
+  // NOTE THIS ONLY WORKS FOR UNPOLARIZED CROSS-SECTIONS
+  // NEED TO WIGNER-ROTATE HELICITES TO S CHANNEL FOR SDMES
+
+  // TODO: ADD CROSSING-MATRICES
+  int lam  = lam_gam - lam_vec;
+  int lamp = (lam_targ - lam_rec) / 2.;
+
+  // Product of residues  
+  std::complex<double> result;
+  result  = top_residue(lam_gam, lam_vec);
+  result *= bottom_residue(lam_targ, lam_rec);
+
+  if (REGGE == false) // Use the covariant expression
+  {
+    result *= wigner_d_int_cos(1, lam, lamp, zt);
+    result /= t - mEx2;
+  }
+  else // Use the helicity amplitude form in the t-channel
+  {
+    result *= regge_propagator(1, lam, lamp);
+  }
+
+  if (IF_FF == true)
+  {
+    double tprime = t - kinematics->t_man(s, 0.);
+    result *= exp(b * tprime);
+  }
+  
   return result;
 };
 
@@ -76,8 +63,13 @@ std::complex<double> jpacPhoto::vector_exchange::helicity_amplitude(std::vector<
 
 // ---------------------------------------------------------------------------
 // Analytic residues for Regge form
-std::complex<double> jpacPhoto::vector_exchange::top_residue(int lam, double t)
+
+// Photon - Axial - Vector
+std::complex<double> jpacPhoto::vector_exchange::top_residue(int lam_gam, int lam_vec)
 {
+  // TODO: Explicit phases in terms of lam_gam and lam_vec instead of difference
+  int lam = lam_gam - lam_vec;
+
   std::complex<double> result;
   switch (std::abs(lam))
   {
@@ -106,8 +98,12 @@ std::complex<double> jpacPhoto::vector_exchange::top_residue(int lam, double t)
   return  result * q * gGam;
 };
 
-std::complex<double> jpacPhoto::vector_exchange::bottom_residue(int lamp, double t)
+// Nucleon - Nucleon - Vector
+std::complex<double> jpacPhoto::vector_exchange::bottom_residue(int lam_targ, int lam_rec)
 {
+  // TODO: Explicit phases in terms of lam_targ and lam_rec instead of difference
+  int lamp = (lam_targ - lam_rec) / 2.;
+
   std::complex<double> vector, tensor;
   switch (std::abs(lamp))
   {
@@ -141,24 +137,17 @@ std::complex<double> jpacPhoto::vector_exchange::bottom_residue(int lamp, double
   return result;
 };
 
-//------------------------------------------------------------------------------
-// Half angle factors
-std::complex<double> jpacPhoto::vector_exchange::half_angle_factor(int lam, int lamp, std::complex<double> z_t)
-{
-  std::complex<double> sinhalf = sqrt((xr - z_t) / 2.);
-  std::complex<double> coshalf = sqrt((xr + z_t) / 2.);
-
-  std::complex<double> result;
-  result  = pow(sinhalf, double(std::abs(lam - lamp)));
-  result *= pow(coshalf, double(std::abs(lam + lamp)));
-
-  return result;
-};
-
 // ---------------------------------------------------------------------------
-// Usual Reggeon Propagator
-std::complex<double> jpacPhoto::vector_exchange::regge_propagator(double s, double t)
+// Reggeon Propagator
+std::complex<double> jpacPhoto::vector_exchange::regge_propagator(int j, int lam, int lamp)
 {
+  int M = std::max(std::abs(lam), std::abs(lamp));
+
+  if (M > j)
+  {
+    return 0.;
+  }
+
   std::complex<double> alpha_t = alpha->eval(t);
 
   // the gamma function causes problesm for large t so
@@ -169,43 +158,136 @@ std::complex<double> jpacPhoto::vector_exchange::regge_propagator(double s, doub
   else
   {
     std::complex<double> result;
-    result  = - alpha->slope();
+    result  = wigner_leading_coeff(j, lam, lamp);
+    result /= barrier_factor(j, M);
+    result *= half_angle_factor(lam, lamp);
+
+    result *= - alpha->slope();
     result *= 0.5 * (double(alpha->signature) + exp(-xi * M_PI * alpha_t));
     result *= cgamma(1. - alpha_t);
-    result *= pow(s, alpha_t);
+    result *= pow(s, alpha_t - double(M));
 
     return result;
   }
 };
 
+//------------------------------------------------------------------------------
+// Half angle factors
+std::complex<double> jpacPhoto::vector_exchange::half_angle_factor(int lam, int lamp)
+{
+  std::complex<double> sinhalf = sqrt((xr - zt) / 2.);
+  std::complex<double> coshalf = sqrt((xr + zt) / 2.);
+
+  std::complex<double> result;
+  result  = pow(sinhalf, double(std::abs(lam - lamp)));
+  result *= pow(coshalf, double(std::abs(lam + lamp)));
+
+  return result;
+};
+
+//------------------------------------------------------------------------------
+// Angular momentum barrier factor
+std::complex<double> jpacPhoto::vector_exchange::barrier_factor(int j, int M)
+{
+  std::complex<double> q = (t - kinematics->mVec2) / sqrt(4. * t * xr);
+  std::complex<double> p = sqrt(xr * t - 4.*mPro2) / 2.;
+
+  std::complex<double> result = pow(2. * p * q, double(j - M));
+
+  return result;
+};
 
 // ---------------------------------------------------------------------------
 // FEYNMAN EVALUATION
 // ---------------------------------------------------------------------------
 
+std::complex<double> jpacPhoto::vector_exchange::covariant_amplitude(std::vector<int> helicities)
+{
+  int lam_gam = helicities[0];
+  int lam_targ = helicities[1];
+  int lam_vec = helicities[2];
+  int lam_rec = helicities[3];
+
+  std::complex<double> result = 0.;
+
+  // Need to contract the Lorentz indices
+  for (int mu = 0; mu < 4; mu++)
+  {
+    for(int nu = 0; nu < 4; nu++)
+    {
+      std::complex<double> temp;
+      temp  = top_vertex(mu, lam_gam, lam_vec);
+      temp *= metric[mu];
+      temp *= vector_propagator(mu, nu);
+      temp *= metric[nu];
+      temp *= bottom_vertex(nu, lam_targ, lam_rec);
+
+      result += temp;
+    }
+  }
+
+  return result;
+};
+
 // ---------------------------------------------------------------------------
 // Photon - Axial Vector - Vector vertex
-// Feynman rules
-std::complex<double> jpacPhoto::vector_exchange::top_vertex(int mu, int lam_gam, int lam_vec, double s, double theta)
+std::complex<double> jpacPhoto::vector_exchange::top_vertex(int mu, int lam_gam, int lam_vec)
 {
-  // Contract with LeviCivita
   std::complex<double> result = 0.;
-  for (int alpha = 0; alpha < 4; alpha++)
-  {
-    for (int beta = 0; beta < 4; beta++)
-    {
-      for (int gamma = 0; gamma < 4; gamma++)
-      {
-        std::complex<double> temp;
-        temp = levi_civita(mu, alpha, beta, gamma);
-        temp *= metric[mu];
-        temp *= kinematics->initial.component(alpha, "beam", s, 0.);
-        temp *= kinematics->eps_gamma.component(beta, lam_gam, s, 0.);
-        temp *= kinematics->eps_vec.component(gamma, lam_vec, s, theta);
 
-        result += temp;
+  // A-V-V coupling
+  if (IF_SCALAR_X == false)
+  {
+    // Contract with LeviCivita
+    for (int alpha = 0; alpha < 4; alpha++)
+    {
+      for (int beta = 0; beta < 4; beta++)
+      {
+        for (int gamma = 0; gamma < 4; gamma++)
+        {
+          std::complex<double> temp;
+          temp = levi_civita(mu, alpha, beta, gamma);
+
+          if (std::abs(temp) < 0.0001) continue;
+        
+          temp *= metric[mu];
+          temp *= kinematics->initial.component(alpha, "beam", s, 0.);
+          temp *= kinematics->eps_gamma.component(beta, lam_gam, s, 0.);
+          temp *= kinematics->eps_vec.component(gamma, lam_vec, s, theta);
+
+          result += temp;
+        }
       }
     }
+  }
+  // S-V-V coupling
+  else
+  {
+    if (lam_vec != 0)
+    {
+      return 0.;
+    }
+
+    for (int nu = 0; nu < 4; nu++)
+    {
+      std::complex<double> term1, term2;
+
+      // (k . q) eps_gamma^mu
+      term1  = exchange_momenta(nu);
+      term1 *= metric[nu];
+      term1 *= kinematics->initial.component(nu, "beam", s, 0.);
+      term1 *= kinematics->eps_gamma.component(mu, lam_gam, s, 0.);
+
+      // (eps_gam . k) q^mu
+      term2  = kinematics->eps_gamma.component(nu, lam_gam, s, 0.);
+      term2 *= metric[nu];
+      term2 *= exchange_momenta(nu);
+      term2 *= kinematics->initial.component(mu, "beam", s, 0.);
+
+      result += term1 - term2;
+    }
+    // Dimensionless coupling requires dividing by the mVec
+    result /= kinematics->mVec;
   }
 
   // Multiply by coupling
@@ -214,7 +296,7 @@ std::complex<double> jpacPhoto::vector_exchange::top_vertex(int mu, int lam_gam,
 
 // ---------------------------------------------------------------------------
 // Nucleon - Nucleon - Vector vertex
-std::complex<double> jpacPhoto::vector_exchange::bottom_vertex(int mu, int lam_targ, int lam_rec, double s, double theta)
+std::complex<double> jpacPhoto::vector_exchange::bottom_vertex(int mu, int lam_targ, int lam_rec)
 {
   // Vector coupling piece
   std::complex<double> vector = 0.;
@@ -240,7 +322,7 @@ std::complex<double> jpacPhoto::vector_exchange::bottom_vertex(int mu, int lam_t
       std::complex<double> sigma_q_ij = 0.;
       for (int nu = 0; nu < 4; nu++)
       {
-        sigma_q_ij += sigma(mu, nu, i, j) * metric[nu] * exchange_momenta(nu, s, theta) / (2. * mPro);
+        sigma_q_ij += sigma(mu, nu, i, j) * metric[nu] * exchange_momenta(nu) / (2. * mPro);
       }
 
       std::complex<double> temp;
@@ -258,7 +340,7 @@ std::complex<double> jpacPhoto::vector_exchange::bottom_vertex(int mu, int lam_t
 // ---------------------------------------------------------------------------
 // Four-momentum of the exchanged meson.
 // Simply the difference of the photon and axial 4-momenta
-std::complex<double> jpacPhoto::vector_exchange::exchange_momenta(int mu, double s, double theta)
+std::complex<double> jpacPhoto::vector_exchange::exchange_momenta(int mu)
 {
   std::complex<double> qGamma_mu, qA_mu;
   qGamma_mu = kinematics->initial.component(mu, "beam", s, 0.);
@@ -269,18 +351,18 @@ std::complex<double> jpacPhoto::vector_exchange::exchange_momenta(int mu, double
 
 // ---------------------------------------------------------------------------
 // Propagator of a massive spin-one particle
-std::complex<double> jpacPhoto::vector_exchange::vector_propagator(int mu, int nu, double s, double theta)
+std::complex<double> jpacPhoto::vector_exchange::vector_propagator(int mu, int nu)
 {
+  // q_mu q_nu / mEx2 - g_mu nu
   std::complex<double> result;
-  result = exchange_momenta(mu, s, theta) * exchange_momenta(nu, s, theta) / mEx2;
+  result = exchange_momenta(mu) * exchange_momenta(nu) / mEx2;
 
   if (mu == nu)
   {
     result -= metric[mu];
   }
 
-  // pole piece (zero width here)
-  result /= kinematics->t_man(s, theta) - mEx2;
+  result /= t - mEx2;
 
   return result;
 };

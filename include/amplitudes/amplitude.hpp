@@ -61,7 +61,7 @@ namespace jpacPhoto
     // Evaluatable in terms of s and t or an event object (see reaction_kinematics.hpp)
 
     // Modulus of the amplitude summed over all helicity combinations
-    double probablity_distribution(double s, double t);
+    double probability_distribution(double s, double t);
 
     // Differential and total cross-section
     double differential_xsection(double s, double t);

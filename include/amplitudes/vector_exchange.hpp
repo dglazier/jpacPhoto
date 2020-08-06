@@ -35,62 +35,98 @@ namespace jpacPhoto
     : amplitude(xkinem, exchange, 3), mEx2(mass*mass), REGGE(false)
     {};
 
+    // Constructor for the reggized)
     vector_exchange(reaction_kinematics * xkinem, linear_trajectory * traj, std::string exchange = "")
     : amplitude(xkinem, exchange, 3), alpha(traj), REGGE(true)
     {};
 
     // Setting utility
-    void set_params(std::vector<double> params)
+    inline void set_params(std::vector<double> params)
     {
-      check_Nparams(params);
+      check_Nparams(params); // make sure the right amout of params passed
       gGam = params[0];
       gV = params[1];
       gT = params[2];
+    };
+
+    // Whether or not to include an exponential form factor (default false)
+    inline void set_formfactor(bool FF, double bb = 0.)
+    {
+      IF_FF = FF;
+      b = bb;
+    }
+
+    // Special case of scalar photoproduction relevant for the X(6900)
+    inline void set_scalarX(bool X)
+    {
+      IF_SCALAR_X = X;
+      FOUR_VEC = true; // Currently scalar top vertex is not implemented in the faster analytic expression, need to do 4-vector algebra
     };
 
     // Assemble the helicity amplitude by contracting the lorentz indices
     std::complex<double> helicity_amplitude(std::vector<int> helicities, double s, double t);
 
   private:
+    // Saved energies
+    double s, t, theta;
+    double zt;
+
     // if using reggeized propagator
     bool REGGE;
+    // or the regge trajectory of the exchange
+    linear_trajectory * alpha;
+
+    // Whether using analytic or covariant expression
+    bool FOUR_VEC = false;
+
+    // Form factor parameters
+    bool IF_FF = false;
+    double b = 0.;
+
+    // IF to treat the produced particle as a scalar
+    bool IF_SCALAR_X = false;
 
     // Couplings to the axial-vector/photon and vector/tensor couplings to nucleon
     double gGam = 0., gpGam = 0., gV = 0., gT = 0.;
 
     // ---------------------------------------------------------------------------
-    // FIXED SPIN
+    // Covariant evaluation
 
     // Mass of the exchange
     double mEx2;
 
+    // Full covariant amplitude
+    std::complex<double> covariant_amplitude(std::vector<int> helicities);
+    
     // Four-momentum of the exhange
-    std::complex<double> exchange_momenta(int mu, double s, double zs);
+    std::complex<double> exchange_momenta(int mu);
 
     // Photon - Axial Vector - Vector vertex
-    std::complex<double> top_vertex(int mu, int lam_gam, int lam_vec, double s, double zs);
+    std::complex<double> top_vertex(int mu, int lam_gam, int lam_vec);
 
     // Nucleon - Nucleon - Vector vertex
-    std::complex<double> bottom_vertex(int nu, int lam_targ, int lam_rec, double s, double zs);
+    std::complex<double> bottom_vertex(int nu, int lam_targ, int lam_rec);
 
     // Vector propogator
-    std::complex<double> vector_propagator(int mu, int nu, double s, double zs);
+    std::complex<double> vector_propagator(int mu, int nu);
 
     // ---------------------------------------------------------------------------
-    // REGGEIZED
+    // Analytic evaluation
 
-    // or the regge trajectory of the exchange
-    linear_trajectory * alpha;
+    // Photon - Axial - Vector
+    std::complex<double> top_residue(int lam_gam, int lam_vec);
 
-    // Calculation of the residues analytically
-    std::complex<double> top_residue(int lam, double t);
-    std::complex<double> bottom_residue(int lamp, double t);
+    // Nucleon - Nucleon - Vector
+    std::complex<double> bottom_residue(int lam_targ, int lam_rec);
 
-    // Usual reggeon propagator
-    std::complex<double> regge_propagator(double s, double t);
+    // Reggeon propagator
+    std::complex<double> regge_propagator(int j, int lam, int lamp);
 
     // Half angle factors
-    std::complex<double> half_angle_factor(int lam, int lamp, std::complex<double> z_t);
+    std::complex<double> half_angle_factor(int lam, int lamp);
+
+    // Angular momentum barrier factor
+    std::complex<double> barrier_factor(int j, int M);
   };
 };
 

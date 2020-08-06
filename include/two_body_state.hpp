@@ -31,7 +31,7 @@ namespace jpacPhoto
   class two_body_state
   {
   private:
-    const double m1, m2;
+    double m1, m2;
     const std::string particle1, particle2;
 
   public:
@@ -47,6 +47,11 @@ namespace jpacPhoto
     {};
 
     double get_mass(std::string name);
+
+    inline void set_m1(double m)
+    {
+      m1 = m;
+    }
 
     std::complex<double> momentum(std::string name, double s);
     std::complex<double> energy(std::string name, double s);
