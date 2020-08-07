@@ -3,6 +3,9 @@ cmake_minimum_required (VERSION 2.9)
 
 project (jpacPhoto)
 
+#installation directories for library
+set(CMAKE_INSTALL_LIBDIR ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+
 set(CMAKE_CXX_FLAGS "-fPIC -O3") 
 
 #Compare the new contents with the existing file, if it exists and is the
@@ -53,12 +56,19 @@ file(GLOB_RECURSE INC "include/*.hpp")
 file(GLOB_RECURSE SRC "src/*.cpp")
 add_library( jpacPhoto SHARED ${INC} ${SRC} )
 
+#COPY LIB TO jpacPhoto/lib
+install(TARGETS  jpacPhoto
+  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+
 # BUILD THE PLOTTING LIBRARY AS WELL
 include_directories("jpacStyle/include")
 include_directories("jpacStyle/src")
 file(GLOB_RECURSE PLOTINC "jpacStyle/include/*.hpp")
 file(GLOB_RECURSE PLOTSRC "jpacStyle/src/*.cpp")
 add_library( jpacStyle SHARED ${PLOTINC} ${PLOTSRC} )
+#COPY LIB TO jpacPhoto/lib
+install(TARGETS  jpacStyle
+  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 
 # GRAB EXECUTABLES and add to the makelist
 include_directories("executables")

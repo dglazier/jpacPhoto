@@ -17,6 +17,7 @@ cd jpacPhoto
 mkdir build && cd build
 cmake ..
 make jpacPhoto
+make install
 ```
 This will create a `libjpacPhoto.so` library that can be linked to other code. 
 Note: cloning with the `--recursive` flag is required to additionally clone the `jpacStyle` submodule.
