@@ -191,13 +191,24 @@ std::complex<double> jpacPhoto::amplitude::SDME(int alpha, int lam, int lamp, do
 };
 
 // ---------------------------------------------------------------------------
-// Integrated beam asymmetry Sigma
+// Beam asymmetry along y axis sigma_y 
 double jpacPhoto::amplitude::beam_asymmetry(double s, double t)
 {
   double rho100 = real(SDME(1, 0, 0, s, t));
   double rho111 = real(SDME(1, 1, 1, s, t));
 
   return - rho100 - 2. * rho111;
+};
+// ---------------------------------------------------------------------------
+// Integrated beam asymmetry sigma_4pi
+double jpacPhoto::amplitude::beam_asymmetry_4pi(double s, double t)
+{
+  double rho111 = real(SDME(1, 1, 1, s, t));
+  double rho11m1 = real(SDME(1, 1, -1, s, t));
+  double rho011 = real(SDME(0, 1, 1, s, t));
+  double rho01m1 = real(SDME(0, 1, -1, s, t));
+
+  return (rho111 + rho11m1)/(rho011 + rho01m1);
 };
 
 // ---------------------------------------------------------------------------

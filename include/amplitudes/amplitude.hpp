@@ -79,6 +79,9 @@ namespace jpacPhoto
 
     // Asymmetries
     double beam_asymmetry(double s, double t);
+    //specific "beam asymmetries" keep above for backward compatability
+    double beam_asymmetry_y(double s, double t){return beam_asymmetry(s,t);};
+    double beam_asymmetry_4pi(double s, double t);
 
     double parity_asymmetry(double s, double t);
 
