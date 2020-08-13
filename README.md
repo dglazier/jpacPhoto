@@ -9,24 +9,18 @@ Such processes are of interest at many experiments at JLab and the future EIC.
 
 Requires [ROOT](https://root.cern.ch/) (tested with version 6.17) with [*MathMore*](https://root.cern.ch/mathmore-library) libraries installed.
 
-##  USAGE
-To generate the base library use:
+##  INSTALLATION
+To install use:
 ```bash
-git clone --recrusive https://github.com/dwinney/jpacPhoto.git 
+git clone --recursive https://github.com/dwinney/jpacPhoto.git 
 cd jpacPhoto
 mkdir build && cd build
 cmake ..
-make jpacPhoto
-make install
+cmake --build . --target install
 ```
-This will create a `libjpacPhoto.so` library that can be linked to other code. 
-Note: cloning with the `--recursive` flag is required to additionally clone the `jpacStyle` submodule.
+This will create a `jpacPhoto/lib/libjpacPhoto.so` and `jpacPhoto/lib/libjpacStyle.so` libraries that can be linked to other code. All executables (e.g. to reproduce plots and results in [[1]](https://arxiv.org/abs/1907.09393) and [[2]](https://arxiv.org/abs/2008.01001)) will also be build in `jpacPhoto/bin`.
 
-To make and use any of the example executables described below use:
-```
-make name_of_executable
-```
-This will additionally build the ``libjpacStyle.so`` plotting library.
+Note: cloning with the `--recursive` flag is required to initiate the `jpacStyle` submodule. Compiling can also be sped up with the optional `-jN` flag where N is the number of available cores.
 
 ##  AMPLITUDES
 The main object of interest is the abstract [`amplitude`](./include/amplitudes/amplitude.hpp) class. This allows you to build [observables](./src/amplitudes/observables.cpp) from helicity amplitudes:
@@ -49,17 +43,6 @@ Available amplitudes, so far, include:
 * [(fixed-spin) Rarita-Schwinger fermion exchange](./include/amplitudes/rarita_exchange.hpp) (u-channel)
 
 Incoherent (interfering) sums of amplitudes may be constructed through the [`amplitude_sum`](./include/amplitudes/amplitude_sum.hpp) class.
-
-Observables are evaluated in terms of the invariant center-of-mass energy, s, and momentum transfer, t. Alternatively to easily interface with event generators, Lorentz vectors may be passed using the `event` struct to calculate s and/or t. For example:
-```c++
-// From four-vectors:
-TLorentzVector pGamma, pTarget, pVector, pRecoil;
-event fvecs(pGamma, pTarget, pVec, pRecoil);
-double s = fvecs.s_man(), t = fvecs.t_man();
-
-// Observable from s and t
-double dxs = amplitude.differential_xsection(s, t);
-```
 
 ##  EXECUTABLES
 The executables folder includes multiple applications of the above amplitudes to different reactions. See documentation in each respective `.cpp` file for usage.

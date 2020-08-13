@@ -3,9 +3,6 @@ cmake_minimum_required (VERSION 2.9)
 
 project (jpacPhoto)
 
-#installation directories for library
-set(CMAKE_INSTALL_LIBDIR ${CMAKE_CURRENT_SOURCE_DIR}/lib)
-
 set(CMAKE_CXX_FLAGS "-fPIC -O3") 
 
 #Compare the new contents with the existing file, if it exists and is the
@@ -56,19 +53,19 @@ file(GLOB_RECURSE INC "include/*.hpp")
 file(GLOB_RECURSE SRC "src/*.cpp")
 add_library( jpacPhoto SHARED ${INC} ${SRC} )
 
-#COPY LIB TO jpacPhoto/lib
-install(TARGETS  jpacPhoto
-  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-
 # BUILD THE PLOTTING LIBRARY AS WELL
 include_directories("jpacStyle/include")
 include_directories("jpacStyle/src")
 file(GLOB_RECURSE PLOTINC "jpacStyle/include/*.hpp")
 file(GLOB_RECURSE PLOTSRC "jpacStyle/src/*.cpp")
 add_library( jpacStyle SHARED ${PLOTINC} ${PLOTSRC} )
-#COPY LIB TO jpacPhoto/lib
-install(TARGETS  jpacStyle
-  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+
+# INSTALLATION SETTINGS
+set( LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib )
+set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin )
+
+install(TARGETS jpacPhoto jpacStyle
+  LIBRARY DESTINATION "${LIBRARY_OUTPUT_DIRECTORY}" )
 
 # GRAB EXECUTABLES and add to the makelist
 include_directories("executables")
@@ -76,7 +73,7 @@ file(GLOB_RECURSE EXE_FILES "executables/*.cpp")
 update_deps_file("${EXE_FILES}")
 foreach( exefile ${EXE_FILES} )
     get_filename_component( exename ${exefile} NAME_WE)
-    add_executable( ${exename} ${exefile} )
+    add_executable( ${exename} ${exefile} ) # MAKE SURE MAKE INSTALL DOESNT MAKE ALL THE EXECUTABLES
     target_link_libraries( ${exename} jpacPhoto)
     target_link_libraries( ${exename} jpacStyle)
     target_link_libraries( ${exename} ${ROOT_LIBRARIES})

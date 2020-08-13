@@ -3,3 +3,5 @@
 /gnuplot/
 /executables/tests
 /.vscode/
+/bin/
+/lib/
